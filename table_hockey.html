@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+
+<script>
+	
+	var canvas;
+	var canvasContext;
+	var ball_x = 50;
+	var ballSpeed_x = 10;
+	var ball_y = 50;
+	var ballSpeed_y = 4;
+
+	// power up
+	var power_x = 100;
+	var power_y = 200;
+
+	var player1score = 0;
+	var player2score = 0;
+
+	var paddle1Y = 250;
+	var paddle2Y = 250;
+	const PADDLE_THICKNESS = 10;
+	const PADDLE_HEIGHT = 100;
+	const WIN_SCORE = 3;
+
+	var winScreen = false;
+
+	function calculateMousePos(evt){
+		var rect = canvas.getBoundingClientRect();
+		var root = document.documentElement;
+		var mouseX = evt.clientX - rect.left - root.scrollLeft;
+		var mouseY = evt.clientY - rect.top - root.scrollTop;
+		return{
+			x:mouseX,
+			y:mouseY
+		};
+	}
+
+	function handleMouseClick(evt){
+		if(winScreen){
+			player1score = 0;
+			player2score = 0;
+			winScreen = false;
+		}
+	}
+
+	window.onload = function(){
+		canvas = document.getElementById('gameCanvas');
+		canvasContext = canvas.getContext('2d');
+
+		var framesPerSecond = 30;
+		setInterval(function(){
+			moveEverything();
+			drawEverything();
+		}, 1000/framesPerSecond);
+
+		canvas.addEventListener('mousedown', handleMouseClick);
+
+		canvas.addEventListener('mousemove', 
+			function(evt){
+				var mousePos = calculateMousePos(evt);
+				paddle1Y = mousePos.y - (PADDLE_HEIGHT/2);
+			});
+	}
+
+	function ballReset(){
+		if(player1score >= WIN_SCORE || player2score >= WIN_SCORE){
+			winScreen = true;
+		}
+
+		ball_x = canvas.width/2;
+		ball_y = canvas.height/2;
+		ballSpeed_x = -ballSpeed_x;
+	}
+
+	function compMove(){
+		var paddle2YCenter = paddle2Y + (PADDLE_HEIGHT/2);
+		if(paddle2YCenter < ball_y - 35){
+			paddle2Y += 6;
+		}else if(paddle2YCenter > ball_y + 35){
+			paddle2Y -= 6;
+		}
+	}
+
+	function powerUP(){
+
+	}
+
+	function moveEverything(){
+		if(winScreen){
+			return;
+		}
+
+		compMove();
+		powerUP();
+
+		ball_x += ballSpeed_x;
+		ball_y += ballSpeed_y;
+
+		if(ball_x < 0){
+			if(ball_y > paddle1Y && ball_y < paddle1Y+PADDLE_HEIGHT){
+				ballSpeed_x = -ballSpeed_x;
+				
+				var deltaY = ball_y - (paddle1Y + PADDLE_HEIGHT/2);
+				ballSpeed_y = deltaY * 0.35;
+			}else{
+				player2score++;	// must be before ballReset
+				ballReset();
+			}
+		}
+		if(ball_x > canvas.width){
+			if(ball_y > paddle2Y && ball_y < paddle2Y+PADDLE_HEIGHT){
+				ballSpeed_x = -ballSpeed_x;
+
+				var deltaY = ball_y - (paddle2Y + PADDLE_HEIGHT/2);
+				ballSpeed_y = deltaY * 0.35;
+			}else{
+				player1score++;
+				ballReset();
+			}
+		}
+		if(ball_y < 0){
+			ballSpeed_y = -ballSpeed_y;
+		}
+		if(ball_y > canvas.height){
+			ballSpeed_y = -ballSpeed_y;
+		}
+	}
+
+	function drawEverything(){
+		// next line blanks out the screen with black
+		colorRect(0, 0, canvas.width, canvas.height,'black');
+
+		if(winScreen){
+			canvasContext.fillStyle = 'white';
+
+			if(player1score >= WIN_SCORE){
+				canvasContext.fillText("You Won!", 350, 200);
+			}else if (player2score >= WIN_SCORE){
+				canvasContext.fillText("Computer Won", 350, 200);
+			}
+			canvasContext.fillText("Click to continue", 350, 500);
+			return;
+		}
+
+		drawNet();
+
+		// power up
+		colorCircle(power_x, power_y, 10, 'green');
+		// left player paddle
+		colorRect(0,paddle1Y,PADDLE_THICKNESS,PADDLE_HEIGHT,'white');
+		// right A.I. paddle
+		colorRect(canvas.width - PADDLE_THICKNESS,paddle2Y,PADDLE_THICKNESS,PADDLE_HEIGHT,'white');
+		// the ball
+		colorCircle(ball_x, ball_y, 10, 'white');
+
+		canvasContext.fillText(player1score, 100, 100);
+		canvasContext.fillText(player2score, canvas.width-100, 100);
+	}
+
+	function colorCircle(centerX, centerY, radius, drawColor){
+		canvasContext.fillStyle = drawColor;
+		canvasContext.beginPath();
+		canvasContext.arc(centerX, centerY, radius, 0, Math.PI*2, true);
+		canvasContext.fill();
+	}
+
+	function colorRect(leftX, topY, width, height, drawColor){
+		canvasContext.fillStyle = drawColor;
+		canvasContext.fillRect(leftX, topY, width, height);
+	}
+
+	function drawNet(){
+		for(var i=0; i<canvas.height; i+=40){
+			colorRect(canvas.width/2 - 1, i, 2, 20, 'white');
+		}
+	}
+
+</script>
+
+</html>
